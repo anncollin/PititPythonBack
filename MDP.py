@@ -1,6 +1,6 @@
 def markovDecision(board):
     Expec             = [1]*15 
-    Expec[board.goal] = 0
+    Expec[board.goal] = 14
     Dice              = [0]*15 
 
     # value-iteration algorithm
