@@ -8,4 +8,5 @@ my_board = Board(traps)
 
 # Find an optimal strategy
 Expec, Dice = markovDecision(my_board)
-print(Expec, '\n', Dice)
+list = list(range(0,14))
+print(Expec, '\n', list, '\n',Dice)

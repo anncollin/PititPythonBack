@@ -1,13 +1,13 @@
 def markovDecision(board):
     Expec             = [1]*15 
-    Expec[board.goal] = 14
+    Expec[board.goal] = 0
     Dice              = [0]*15 
 
     # value-iteration algorithm
     iter = 0
     all_expect = [[0]*3]*15
     variance = 1
-    while variance > 0.003 : # Normally until convergence...
+    while variance > 0.00003 : # Normally until convergence...
         for i in range(0,14): 
             successors = board.successors(i)
 
@@ -18,7 +18,7 @@ def markovDecision(board):
 
 
             # Expected value when normal dice is used 
-            exp_normal = 0
+            exp_normal = 1
             if board.board[i] == 2 : #Trap 1
                 exp_normal+= (1/3) * (0.5 * Expec[i] + 0.5 * Expec[0]) 
             elif board.board[i] == 3 : #Trap 2
@@ -45,7 +45,15 @@ def markovDecision(board):
 
 
             # Expected value when risky dice is used 
-            exp_risky = 1 + (1/4) * Expec[i] 
+            exp_risky = 1 
+
+            if board.board[i] == 2 : #Trap 1
+                exp_risky+= (1/4) * (0.5 * Expec[i] + 0.5 * Expec[0]) 
+            elif board.board[i] == 3 : #Trap 2
+                exp_risky+= (1/4) * (0.5 * Expec[i] + 0.5 * Expec[(i-3)%15])
+            else : #No trap 
+                exp_risky+= (1/4) * Expec[i]
+
             for succ in successors: 
                 if board.board[succ] == 2 :#Trap 1
                     exp_risky+= ((1/4)/len(successors)) * Expec[0] 
@@ -79,6 +87,6 @@ def markovDecision(board):
             all_expect[i] = [exp_security, exp_normal, exp_risky]
         iter += 1
     
-    for j in range(0,14): 
+    for j in range(0,15): 
         Dice[j] = all_expect[j].index(min(all_expect[j])) +1 
     return Expec, Dice
