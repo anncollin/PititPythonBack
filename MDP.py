@@ -1,92 +1,55 @@
+# from board_vec import Board
+# from dies import *
+# import sys
+
+
+def _rec_exp(die, board, index, expec, stop):
+    if stop == -1:
+        return 0
+    trap = board.get_tile(index)
+    successors = board.get_successors(index, stop == die.adv)
+    l_succ_div = 1./len(successors)
+
+    ret = 1./(die.adv + 1.) * (
+            (1-die.trap_prob) * expec[index] +
+            die.trap_prob * (expec[trap.get_new_state(index)] + trap.get_lost_turns())
+    )
+    for succ in successors:
+        ret += _rec_exp(die, board, succ, expec, stop-1) * l_succ_div
+
+    return ret
+
+
+def get_exp(die, board, index, expec):
+    return 1 + _rec_exp(die, board, index, expec, die.adv)
+
+
 def markovDecision(board):
-    Expec             = [1]*15 
-    Expec[board.goal] = 0
-    Dice              = [0]*15 
+    expec = [1] * 15
+    expec[board.goal] = 0
+    die_to_use = [board.dice[0]] * 15
+    dice = board.dice
 
     # value-iteration algorithm
-    iter = 0
-    all_expect = [[0]*3]*15
+    _iter = 0
+    all_expect = []
+    for _ in range(15):
+        all_expect += [[0] * 3]
     variance = 1
-    while variance > 0.00003 : # Normally until convergence...
-        for i in range(0,14): 
-            successors = board.successors(i)
+    while variance > 0.00003:  # Normally until convergence...
+        variance = 0
+        for i in range(14):
+            exp_i = [0]*3
+            # min_exp = sys.maxsize
+            for j in range(len(dice)):
+                exp_i[j] = get_exp(dice[j], board, i, expec)
+                variance += abs(all_expect[i][j] - exp_i[j])
+                all_expect[i][j] = exp_i[j]
+                # min_exp = min(min_exp, exp_i[j])
 
-            # Expected value when security dice is used 
-            exp_security = 1 + 0.5 * Expec[i] # Cost of 1 action + do not move
-            for succ in successors: # move of 1
-                exp_security+= (0.5/len(successors)) * Expec[succ]  
+            expec[i] = min(all_expect[i])
+        _iter += 1
 
-
-            # Expected value when normal dice is used 
-            exp_normal = 1
-            if board.board[i] == 2 : #Trap 1
-                exp_normal+= (1/3) * (0.5 * Expec[i] + 0.5 * Expec[0]) 
-            elif board.board[i] == 3 : #Trap 2
-                exp_normal+= (1/3) * (0.5 * Expec[i] + 0.5 * Expec[(i-3)%15])
-            else : #No trap 
-                exp_normal+= (1/3) * Expec[i]
-            
-            for succ in successors: 
-                if board.board[succ] == 2 : #Trap 1
-                    exp_normal+= ((1/3)/len(successors)) * (0.5 * Expec[succ] + 0.5 * Expec[succ]) 
-                elif board.board[i] == 3 : #Trap 2
-                    exp_normal+= ((1/3)/len(successors)) * (0.5 * Expec[succ] + 0.5 * Expec[(succ-3)%15]) 
-                else : #No trap 
-                    exp_normal+= ((1/3)/len(successors)) * Expec[succ]
-
-                successors2 = board.successors(succ)
-                for succ2 in successors2: 
-                    if board.board[succ2] == 2 : #Trap 1
-                        exp_normal+= ((1/3)/len(successors2)) * (0.5 * Expec[succ2] + 0.5 * Expec[succ2]) 
-                    elif board.board[i] == 3 : #Trap 2
-                        exp_normal+= ((1/3)/len(successors2)) * (0.5 * Expec[succ2] + 0.5 * Expec[(succ2-3)%15]) 
-                    else : #No trap 
-                        exp_normal+= ((1/3)/len(successors2)) * Expec[succ2]
-
-
-            # Expected value when risky dice is used 
-            exp_risky = 1 
-
-            if board.board[i] == 2 : #Trap 1
-                exp_risky+= (1/4) * (0.5 * Expec[i] + 0.5 * Expec[0]) 
-            elif board.board[i] == 3 : #Trap 2
-                exp_risky+= (1/4) * (0.5 * Expec[i] + 0.5 * Expec[(i-3)%15])
-            else : #No trap 
-                exp_risky+= (1/4) * Expec[i]
-
-            for succ in successors: 
-                if board.board[succ] == 2 :#Trap 1
-                    exp_risky+= ((1/4)/len(successors)) * Expec[0] 
-                elif board.board[succ] == 3 :#Trap 2
-                    exp_risky+= ((1/4)/len(successors)) * Expec[(succ-3)%15]
-                else : 
-                    exp_risky+= ((1/4)/len(successors)) * Expec[succ] 
-
-                successors2 = board.successors(succ)
-                for succ2 in successors2: 
-                    if board.board[succ2] == 2 :#Trap 1
-                        exp_risky+= ((1/4)/len(successors2)) * Expec[0] 
-                    elif board.board[succ2] == 3 :#Trap 2
-                        exp_risky+= ((1/4)/len(successors2)) * Expec[(succ2-3)%15] 
-                    else : 
-                        exp_risky+= ((1/3)/len(successors2)) * Expec[succ2]
-
-                    successors3 = board.successors(succ2)
-                    for succ3 in successors3: 
-                        if board.board[succ3] == 2 :#Trap 1
-                            exp_risky+= ((1/4)/len(successors3)) * Expec[0] 
-                        elif board.board[succ] == 3 :#Trap 2
-                            exp_risky+= ((1/4)/len(successors3)) * Expec[(succ3-3)%15] 
-                        else : 
-                            exp_risky+= ((1/4)/len(successors3)) * Expec[succ3]
-
-            Expec[i] = min(exp_security, exp_normal, exp_risky)
-            variance = abs(all_expect[i][0]-exp_security) \
-                    + abs(all_expect[i][1]-exp_normal) \
-                    + abs(all_expect[i][2]-exp_risky)
-            all_expect[i] = [exp_security, exp_normal, exp_risky]
-        iter += 1
-    
-    for j in range(0,15): 
-        Dice[j] = all_expect[j].index(min(all_expect[j])) +1 
-    return Expec, Dice
+    for j in range(0, 15):
+        die_to_use[j] = all_expect[j].index(min(all_expect[j])) + 1
+    return expec, die_to_use
