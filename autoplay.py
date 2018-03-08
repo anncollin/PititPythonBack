@@ -61,7 +61,7 @@ def _play_die_strategy(start, dice, board, strategy):
     actual = start
     n_moves = 0
     while actual != board.goal:
-        actual, step_n_moves = _play_turn(actual, dice[strategy[actual]], board)
+        actual, step_n_moves = _play_turn(actual, dice[strategy(actual)], board)
         n_moves += step_n_moves
     return n_moves
 
@@ -87,10 +87,12 @@ if __name__ == "__main__":
                 min_die = j
         strat[i] = min_die
     print(str(strat))
-    print(play_strategy(get_all_dice(), my_board, strat, n_games=1000))
+    print(play_strategy(get_all_dice(), my_board, lambda _x: strat[_x], n_games=1000))
     Expec, Dice = markovDecision(my_board)
     mdp_dice = [d-1 for d in Dice]
     print(mdp_dice)
-    print(Expec)
-    print(play_strategy(get_all_dice(), my_board, mdp_dice, n_games=1000))
+    # print(Expec)
+    print(play_strategy(get_all_dice(), my_board, lambda _x: mdp_dice[_x], n_games=1000))
+    print("random for fun")
+    print(play_strategy(get_all_dice(), my_board, lambda _x: randrange(3), n_games=1000))
 
