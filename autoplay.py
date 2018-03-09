@@ -1,12 +1,12 @@
 from random import randrange, random, seed
 from board import Board
-from dies import get_all_dice
 from MDP import markovDecision
+import pprint
 
 
-def play(dice, board, n_games=100):
+def play(board, n_games=100):
+    dice = board.dice
     moves = {}
-    seed(123)
     for my_die in dice:
         die_list = [0]*board.goal
         for start in range(board.goal):
@@ -47,9 +47,9 @@ def _play_turn(start, my_die, board):
     return actual, n_moves
 
 
-def play_strategy(dice, board, strategy, n_games):
+def play_strategy(board, strategy, n_games=100):
+    dice = board.dice
     moves = [0]*board.goal
-    seed(123)
     for start in range(board.goal):
         for _ in range(n_games):
             moves[start] += _play_die_strategy(start, dice, board, strategy)
@@ -66,33 +66,90 @@ def _play_die_strategy(start, dice, board, strategy):
     return n_moves
 
 
-if __name__ == "__main__":
-    traps = {'trap1': [], 'trap2': []}
-    my_board = Board(traps, circling=True)
-    matrix = [0]*3
-    iter = 0
-    for my_die, x in play(get_all_dice(), my_board, n_games=1000).items():
-        matrix[iter] = x
-        iter += 1
-        print(str(my_die), " = ", str(x))
+def find_strategy(board, n_games=100):
+    dice = board.dice
+    use_these = [0]*board.goal
+    for start in range(board.goal):
+        avg_dice = {}
+        for my_die in dice:
+            strategy = lambda _x: my_die.type-1 if _x == start \
+                             else randrange(len(dice))
+            moves = 0
+            for _ in range(n_games):
+                moves += _play_die_strategy(start, dice, board, strategy)
+            avg_dice[my_die] = moves / n_games
+        use_these[start] = min(avg_dice, key=avg_dice.get).type - 1
+    return use_these
 
-    strat = [-1]*my_board.goal
-    for i in range(my_board.goal):
-        min_val = 1000000000
-        min_die = -1
-        for j in range(3):
-            val = matrix[j][i]
-            if val < min_val:
-                min_val = val
-                min_die = j
-        strat[i] = min_die
-    print(str(strat))
-    print(play_strategy(get_all_dice(), my_board, lambda _x: strat[_x], n_games=1000))
+
+def battle(board, strategies, n_games=100):
+    dice = board.dice
+    results = {'wins': [0]*len(strategies), 'equal': 0}
+    for _ in range(n_games):
+        actual = [0] * len(strategies)
+        while board.goal not in actual: # false if one is at end!
+            for ind in range(len(strategies)):
+                actual[ind], _ = _play_turn(actual[ind],
+                                            dice[strategies[ind](actual[ind])],
+                                            board)
+        winners = 0
+        for act in actual:
+            if act == board.goal:
+                winners += 1
+        for act, ind in zip(actual, range(len(actual))):
+            if act == board.goal:
+                results['wins'][ind] += 1./winners
+        if winners > 1:
+            results['equal'] += 1
+    return results
+
+
+if __name__ == "__main__":
+    seed(789)
+    traps = {'trap1': [4,5], 'trap2': [8, 12]}
+    my_board = Board(traps, circling=True)
+    n_games = 1000
+    ###########
+    # matrix = [0]*3
+    # iter = 0
+    # for my_die, x in play(my_board, n_games=n_games).items():
+    #     matrix[iter] = x
+    #     iter += 1
+    #     print(str(my_die), " = ", str(x))
+    #
+    # strat = [-1]*my_board.goal
+    # for i in range(my_board.goal):
+    #     min_val = 1000000000
+    #     min_die = -1
+    #     for j in range(3):
+    #         val = matrix[j][i]
+    #         if val < min_val:
+    #             min_val = val
+    #             min_die = j
+    #     strat[i] = min_die
+    # print(str(strat))
+    # print(play_strategy(my_board, lambda _x: strat[_x], n_games=n_games))
+    #############################
     Expec, Dice = markovDecision(my_board)
     mdp_dice = [d-1 for d in Dice]
     print(mdp_dice)
     # print(Expec)
-    print(play_strategy(get_all_dice(), my_board, lambda _x: mdp_dice[_x], n_games=1000))
-    print("random for fun")
-    print(play_strategy(get_all_dice(), my_board, lambda _x: randrange(3), n_games=1000))
+    print(play_strategy(my_board, lambda _x: mdp_dice[_x], n_games=n_games))
+    # print("random for fun")
+    # print(play_strategy(my_board, lambda _x: randrange(3), n_games=n_games))
+    print("maybe intelligent")
+    ai_dice = find_strategy(my_board, n_games=n_games)
+    print(ai_dice)
+    print(play_strategy(my_board, lambda _x: ai_dice[_x], n_games=n_games))
+
+    print("epic battles ensue: ")
+    results = battle(my_board, [
+        lambda _x: mdp_dice[_x],
+        lambda _x: ai_dice[_x],
+        lambda _x: randrange(3)
+    ], n_games=10000)
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(results)
+
+
 
