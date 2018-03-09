@@ -66,7 +66,7 @@ def _play_die_strategy(start, dice, board, strategy):
     return n_moves
 
 
-def find_strategy(board, n_games=100):
+def find_strategy(board, n_games=100, very_intelligent=False):
     dice = board.dice
     use_these = [0]*board.goal
     for start in range(board.goal):
@@ -79,6 +79,26 @@ def find_strategy(board, n_games=100):
                 moves += _play_die_strategy(start, dice, board, strategy)
             avg_dice[my_die] = moves / n_games
         use_these[start] = min(avg_dice, key=avg_dice.get).type - 1
+    if not very_intelligent:
+        return use_these
+
+
+    change = True
+    while change:  # until no change makes sense anymore
+        change = False
+        for start in range(board.goal):
+            avg_dice = {}
+            prev_die = use_these[start]
+            for my_die in dice:
+                strategy = lambda _x: my_die.type-1 if _x == start \
+                                 else use_these[_x]
+                moves = 0
+                for _ in range(n_games):
+                    moves += _play_die_strategy(start, dice, board, strategy)
+                avg_dice[my_die] = moves / n_games
+            use_these[start] = min(avg_dice, key=avg_dice.get).type - 1
+            if use_these[start] != prev_die:
+                change = True
     return use_these
 
 
@@ -138,7 +158,7 @@ if __name__ == "__main__":
     # print("random for fun")
     # print(play_strategy(my_board, lambda _x: randrange(3), n_games=n_games))
     print("maybe intelligent")
-    ai_dice = find_strategy(my_board, n_games=n_games)
+    ai_dice = find_strategy(my_board, n_games=n_games, very_intelligent=True)
     print(ai_dice)
     print(play_strategy(my_board, lambda _x: ai_dice[_x], n_games=n_games))
 
