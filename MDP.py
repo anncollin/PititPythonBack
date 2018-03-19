@@ -12,7 +12,7 @@ def _rec_exp(die, board, index, expec, stop):
 
     ret = 1./(die.adv + 1.) * (
             (1-die.trap_prob) * expec[index] +
-            die.trap_prob * (expec[trap.get_new_state(index)] + trap.get_lost_turns())
+            die.trap_prob * (expec[trap.get_new_state(index, board)] + trap.get_lost_turns())
     )
     for succ in successors:
         ret += _rec_exp(die, board, succ, expec, stop-1) * l_succ_div

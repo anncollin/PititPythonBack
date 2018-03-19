@@ -32,6 +32,12 @@ class Board:
         else:
             return [state + 1]
 
+    def get_precursor(self, state, backtrack):
+        if 10 <= state < 10 + backtrack:
+            to_deduce = backtrack - (state-9)
+            return max(0, 3 - to_deduce)
+        return max(0, state - backtrack)
+
     def get_tile(self, index):
         return self.board[index]
 

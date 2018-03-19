@@ -43,7 +43,7 @@ def _play_turn(start, my_die, board):
     if random() < my_die.trap_prob:
         trap = board.get_tile(actual)
         n_moves += trap.get_lost_turns()
-        actual = trap.get_new_state(actual)
+        actual = trap.get_new_state(actual, board)
     return actual, n_moves
 
 
@@ -126,8 +126,8 @@ def battle(board, strategies, n_games=100):
 
 if __name__ == "__main__":
     seed(789)
-    traps = {'trap1': [4,5], 'trap2': [8, 12]}
-    my_board = Board(traps, circling=True)
+    traps = {'trap1': [1, 10], 'trap2': [3, 5, 7]}
+    my_board = Board(traps, circling=False)
     n_games = 1000
     ###########
     # matrix = [0]*3

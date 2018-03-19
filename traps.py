@@ -11,7 +11,7 @@ class Trap:
         return 0
 
     @staticmethod
-    def get_new_state(state):
+    def get_new_state(state, board):
         return state
 
 
@@ -23,7 +23,7 @@ class TrapRestart(Trap):
         return 0
 
     @staticmethod
-    def get_new_state(state):
+    def get_new_state(state, board):
         return 0
 
 
@@ -35,8 +35,8 @@ class TrapBack(Trap):
         return 0
 
     @staticmethod
-    def get_new_state(state):
-        return max(0, state-3)
+    def get_new_state(state, board):
+        return board.get_precursor(state, 3)
 
 
 class TrapBlock(Trap):
@@ -47,7 +47,7 @@ class TrapBlock(Trap):
         return 1
 
     @staticmethod
-    def get_new_state(state):
+    def get_new_state(state, board):
         return state
 
 
