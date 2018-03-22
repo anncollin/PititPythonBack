@@ -4,7 +4,7 @@
 
 
 class Trap:
-    __type = 0
+    type = 0
 
     @staticmethod
     def get_lost_turns():
@@ -16,7 +16,7 @@ class Trap:
 
 
 class TrapRestart(Trap):
-    __type = 1
+    type = 1
 
     @staticmethod
     def get_lost_turns():
@@ -28,7 +28,7 @@ class TrapRestart(Trap):
 
 
 class TrapBack(Trap):
-    __type = 2
+    type = 2
 
     @staticmethod
     def get_lost_turns():
@@ -40,7 +40,7 @@ class TrapBack(Trap):
 
 
 class TrapBlock(Trap):
-    __type = 3
+    type = 3
 
     @staticmethod
     def get_lost_turns():

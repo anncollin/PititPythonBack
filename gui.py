@@ -20,6 +20,7 @@ pink = (255, 200, 200)
 forest_green = (34, 139, 34)
 peru = (205, 133, 63)
 lime_green = (50, 205, 50)
+grey = (205, 201, 201)
 
 die_color = [black, forest_green, orange, red]
 tile_color = [lime_green, sky_blue, pink, peru]
@@ -49,6 +50,7 @@ y_co = surfM + 1.5*size*np.array(
                                 )
 co_map = [0, 1, 2, 3, 4, 11, 10, 6, 5, 7, 8, 12, 13, 14, 9]
 
+
 # draw cases
 def print_case(surf, x, y, values):
     def print_text(text, pos, color):
@@ -58,11 +60,11 @@ def print_case(surf, x, y, values):
         surf.blit(text, pos)
 
     tile = values[2]
-    draw.rect(surf, tile_color[tile], (x, y, size, size), 0)
+    draw.rect(surf, grey, (x, y, size, size), 0)
 
-    draw.rect(surf, black, (x, y, size * 0.5, size * 0.4), 0)
-    draw.rect(surf, black, (x, y, size*0.5, size*0.4), 1)
-    print_text(values[0], (x+4, y+3), white)
+    draw.rect(surf, tile_color[tile], (x, y, size*0.5, size*0.4), 0)
+    draw.rect(surf, black, (x, y, size*0.5, size*0.4), 2)
+    print_text(values[0], (x+4, y+3), black)
 
     die = values[1]
     nx = x+7
