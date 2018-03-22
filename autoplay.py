@@ -1,6 +1,7 @@
 from random import randrange, random, seed
 from board import Board
 from MDP import markovDecision
+import numpy as np
 import pprint
 
 
@@ -106,18 +107,17 @@ def battle(board, strategies, n_games=100):
     dice = board.dice
     results = {'wins': [0]*len(strategies), 'equal': 0}
     for _ in range(n_games):
-        actual = [0] * len(strategies)
-        while board.goal not in actual: # false if one is at end!
-            for ind in range(len(strategies)):
-                actual[ind], _ = _play_turn(actual[ind],
-                                            dice[strategies[ind](actual[ind])],
-                                            board)
-        winners = 0
-        for act in actual:
-            if act == board.goal:
+        tot_moves = [0] * len(strategies)
+        for ind in range(len(strategies)):
+            tot_moves[ind] = _play_die_strategy(0, dice, board, strategies[ind])
+
+        min_move = min(tot_moves)
+        winners = sum(np.array(tot_moves) == min_move)
+        for move in tot_moves:
+            if move == min_move:
                 winners += 1
-        for act, ind in zip(actual, range(len(actual))):
-            if act == board.goal:
+        for move, ind in zip(tot_moves, range(len(tot_moves))):
+            if move == min_move:
                 results['wins'][ind] += 1./winners
         if winners > 1:
             results['equal'] += 1
@@ -129,27 +129,7 @@ if __name__ == "__main__":
     traps = {'trap1': [1, 10], 'trap2': [3, 5, 7]}
     my_board = Board(traps, circling=False)
     n_games = 1000
-    ###########
-    # matrix = [0]*3
-    # iter = 0
-    # for my_die, x in play(my_board, n_games=n_games).items():
-    #     matrix[iter] = x
-    #     iter += 1
-    #     print(str(my_die), " = ", str(x))
-    #
-    # strat = [-1]*my_board.goal
-    # for i in range(my_board.goal):
-    #     min_val = 1000000000
-    #     min_die = -1
-    #     for j in range(3):
-    #         val = matrix[j][i]
-    #         if val < min_val:
-    #             min_val = val
-    #             min_die = j
-    #     strat[i] = min_die
-    # print(str(strat))
-    # print(play_strategy(my_board, lambda _x: strat[_x], n_games=n_games))
-    #############################
+
     Expec, Dice = markovDecision(my_board)
     mdp_dice = [d-1 for d in Dice]
     print(mdp_dice)
