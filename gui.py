@@ -27,8 +27,8 @@ die_color = [black, forest_green, orange, red]
 tile_color = [lime_green, sky_blue, pink, peru]
 
 
-surfX = 1200
-surfY = 220
+surfX = 2760
+surfY = 440
 surfM = 20
 surf = Surface((surfX, surfY))
 
