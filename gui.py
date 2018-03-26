@@ -31,7 +31,7 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
 
     die_color = [black, forest_green, orange, red]
     tile_color = [lime_green, sky_blue, pink, peru]
-    tile_emoji = [u"👟", u"⏮", u"◀", u"🔂", u"🏁"] # 🌀 🔙 🕸
+    tile_emoji = [u"👟", u"⏮", u"◀", u"🔂", u"🏁"]  # 🌀 🔙 🕸
 
     surfX = 2760
     surfY = 480
@@ -47,31 +47,57 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
                              2.0 * size * np.array([3, 4, 5, 6]))
     y_co = surfM + 1.5*size*np.array([0]*11 + [1]*4)
     co_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 10, 11, 12, 13]
-
+    nmb_offset_x = 9
+    nmb_offset_y = 7
+    tile_emoji_offset = np.split((np.array([8+nmb_offset_x, 11+nmb_offset_y,
+                                            12+nmb_offset_x, 8+nmb_offset_y,
+                                            10.5+nmb_offset_x, 6+nmb_offset_y,
+                                            8+nmb_offset_x, 3+nmb_offset_y,
+                                            10, 10]))/100*size, 5)
 
     # draw cases
     def print_case(surf, x, y, values):
         def print_text(text, pos, color, emoji=False):
             text = str(text)
-            ft = freetype.Font("seguisym.ttf", 64) if emoji else freetype.SysFont('Calibri', round(size*0.4))
+            ft = freetype.Font("seguisym.ttf", 50) if emoji else freetype.SysFont('Calibri', round(size*0.2))
             text = ft.render(text, fgcolor=color)
             surf.blit(text[0], pos)
 
         tile = values[2]
+        emoji_offset = tile_emoji_offset[tile]
         draw.rect(surf, grey, (x, y, size, size), 0)
 
         # draw.rect(surf, tile_color[tile], (x, y, size*0.5, size*0.4), 0)
         draw.rect(surf, black, (x, y, size * 0.5, size * 0.4), 0)
         draw.rect(surf, black, (x, y, size*0.5, size*0.4), 2)
-        # print_text(values[0], (x+0.045*size, y+0.05*size), black)
-        print_text(tile_emoji[tile], (x + 0.045 * size, y + 0.05 * size), tile_color[tile], emoji=True)
+        print_text(values[0], (x+0.045*size, y+0.05*size), white)
+        print_text(tile_emoji[tile], (x + +emoji_offset[0], y + +emoji_offset[1]), tile_color[tile], emoji=True)
 
         # Die
+        def draw_die_face(face, x, y):
+            face_width = size*0.4
+            radius = face_width/8.0
+            center = (int(round(x+face_width/2.0)), int(round(y+face_width/2.0)))
+            radius = int(round(radius))
+            face_width = round(int(face_width))
+
+            if face != 2:
+                draw.circle(surf, white, center, radius)
+                draw.circle(surf, black, center, radius, 2)
+            if face != 1:
+                draw.circle(surf, white, (center[0]-radius*2, center[1]+radius*2), radius)
+                draw.circle(surf, black, (center[0] - radius * 2, center[1] + radius * 2), radius, 2)
+
+                draw.circle(surf, white, (center[0]+radius*2, center[1]-radius*2), radius)
+                draw.circle(surf, black, (center[0] + radius * 2, center[1] - radius * 2), radius, 2)
+
         die = values[1]
         nx = x+0.1*size
         ny = y+size*0.5
         draw.rect(surf, die_color[die], (nx, ny, size*0.4, size*0.4), 0)
-        print_text(die, (nx+0.1*size, ny+0.05*size), white)
+        draw.rect(surf, black, (nx, ny, size * 0.4, size * 0.4), 3)
+        # print_text(die, (nx+0.1*size, ny+0.05*size), white)
+        draw_die_face(die, nx, ny)
 
         # Gradient bar
         def draw_gradient(c1, c2, x, y, width, height):
@@ -101,7 +127,7 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
             draw.rect(surf, black, (x, y, size, size), 3)
             ft = freetype.Font("seguisym.ttf", 140)
             text = ft.render(tile_emoji[4], fgcolor=white)
-            surf.blit(text[0], (x+10,y+10))
+            surf.blit(text[0], (x+tile_emoji_offset[4][0], y+tile_emoji_offset[4][1]))
 
     # draw lines
     x_l = surfM + size + np.append(np.append(1.5 * size * np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),

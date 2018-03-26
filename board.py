@@ -9,11 +9,14 @@ class Board:
         self.circling = circling
         self.board = [get_tile_trap(0)] * 15
 
-        for _trap1 in trap_dic['trap1']:
-            self.board[_trap1] = get_tile_trap(1)
+        for _trap in trap_dic['trap1']:
+            self.board[_trap] = get_tile_trap(1)
 
-        for _trap2 in trap_dic['trap2']:
-            self.board[_trap2] = get_tile_trap(2)
+        for _trap in trap_dic['trap2']:
+            self.board[_trap] = get_tile_trap(2)
+
+        for _trap in trap_dic['trap3']:
+            self.board[_trap] = get_tile_trap(3)
 
         self.dice = get_all_dice()
 

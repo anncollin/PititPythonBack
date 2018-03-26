@@ -126,6 +126,27 @@ def battle(board, strategies, n_games=100):
 
 if __name__ == "__main__":
     seed(789)
+    traps = {'trap1': [1, 6,8, 13], 'trap2': [5]}
+    b = Board(traps, circling=True)
+    dice = [2, 1, 3, 2, 3, 2, 1, 3, 1, 1, 2, 1, 1, 1, 0]
+
+    E, Dice = markovDecision(b)
+    print(E)
+    dice = [x - 1 for x in dice]
+    print(Dice)
+    Dice = [x-1 for x in Dice]
+    print("epic battles ensue: ")
+    results = battle(b, [
+        lambda _x: dice[_x],
+        lambda _x: Dice[_x],
+        lambda _x: randrange(3)
+    ], n_games=10000)
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(results)
+    print(play_strategy(b, lambda _x: dice[_x], n_games=10000))
+    exit(0)
+
+
     traps = {'trap1': [1, 10], 'trap2': [3, 5, 7]}
     my_board = Board(traps, circling=False)
     n_games = 1000
