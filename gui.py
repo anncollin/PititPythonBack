@@ -1,4 +1,7 @@
-from pygame import Surface, image, draw, font
+# -*- coding: utf-8 -*-
+
+
+from pygame import Surface, image, draw, font, freetype, Color
 from board import Board
 from collections import defaultdict
 from autoplay import *
@@ -28,7 +31,7 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
 
     die_color = [black, forest_green, orange, red]
     tile_color = [lime_green, sky_blue, pink, peru]
-
+    tile_emoji = [u"👟", u"⏮", u"◀", u"🔂", u"🏁"] # 🌀 🔙 🕸
 
     surfX = 2760
     surfY = 480
@@ -48,18 +51,20 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
 
     # draw cases
     def print_case(surf, x, y, values):
-        def print_text(text, pos, color):
+        def print_text(text, pos, color, emoji=False):
             text = str(text)
-            ft = font.SysFont('Calibri', round(size/2))
-            text = ft.render(text, True, color)
-            surf.blit(text, pos)
+            ft = freetype.Font("seguisym.ttf", 64) if emoji else freetype.SysFont('Calibri', round(size*0.4))
+            text = ft.render(text, fgcolor=color)
+            surf.blit(text[0], pos)
 
         tile = values[2]
         draw.rect(surf, grey, (x, y, size, size), 0)
 
-        draw.rect(surf, tile_color[tile], (x, y, size*0.5, size*0.4), 0)
+        # draw.rect(surf, tile_color[tile], (x, y, size*0.5, size*0.4), 0)
+        draw.rect(surf, black, (x, y, size * 0.5, size * 0.4), 0)
         draw.rect(surf, black, (x, y, size*0.5, size*0.4), 2)
-        print_text(values[0], (x+0.045*size, y+0.05*size), black)
+        # print_text(values[0], (x+0.045*size, y+0.05*size), black)
+        print_text(tile_emoji[tile], (x + 0.045 * size, y + 0.05 * size), tile_color[tile], emoji=True)
 
         # Die
         die = values[1]
@@ -87,13 +92,16 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
         # Outer border
         draw.rect(surf, black, (x, y, size, size), 3)
 
-    font.init()
+    freetype.init()
     for x, y, ind in zip(x_co, y_co, co_map):
         if ind != 14:
             print_case(surf, x, y, [ind+1, dice[ind], board[ind], expec[ind]/ref_expec])
         else:
             draw.rect(surf, black, (x, y, size, size), 0)
             draw.rect(surf, black, (x, y, size, size), 3)
+            ft = freetype.Font("seguisym.ttf", 140)
+            text = ft.render(tile_emoji[4], fgcolor=white)
+            surf.blit(text[0], (x+10,y+10))
 
     # draw lines
     x_l = surfM + size + np.append(np.append(1.5 * size * np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
@@ -124,16 +132,18 @@ if __name__ == "__main__":
     for board, name in zip(boards, names):
         mdp_expec, mdp_dice = markovDecision(board)
         # mdp_dice = find_strategy(board, n_games=5000, very_intelligent=True)
-        mdp_expec = play_strategy(board, lambda x: mdp_dice[x]-1, n_games=10000)
 
-        ag_dice = find_strategy(board, n_games=1000, very_intelligent=False)
-        ag_expec = play_strategy(board, lambda x: ag_dice[x], n_games=10000)
+        # mdp_expec = play_strategy(board, lambda x: mdp_dice[x]-1, n_games=10000)
+        #
+        # ag_dice = find_strategy(board, n_games=1000, very_intelligent=False)
+        # ag_expec = play_strategy(board, lambda x: ag_dice[x], n_games=10000)
+        #
+        # rand_expec = play_strategy(board, lambda x: randrange(3), n_games=10000)
 
-        rand_expec = play_strategy(board, lambda x: randrange(3), n_games=10000)
-
-        draw_board([x.type for x in board.board], mdp_dice, mdp_expec, ag_expec[0], name,"mdp"+".png")
-        draw_board([x.type for x in board.board], [d+1 for d in ag_dice], ag_expec, ag_expec[0], name, "ag" + ".png")
-        draw_board([x.type for x in board.board], [0]*15, rand_expec, ag_expec[0], name, "rand" + ".png")
+        draw_board([x.type for x in board.board], mdp_dice, mdp_expec, mdp_expec[0], name, "mdp" + ".png")
+        # draw_board([x.type for x in board.board], mdp_dice, mdp_expec, ag_expec[0], name,"mdp"+".png")
+        # draw_board([x.type for x in board.board], [d+1 for d in ag_dice], ag_expec, ag_expec[0], name, "ag" + ".png")
+        # draw_board([x.type for x in board.board], [0]*15, rand_expec, ag_expec[0], name, "rand" + ".png")
 
     # ' & '.join([str(x) for x in a])+'\\'
 
