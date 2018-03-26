@@ -98,13 +98,13 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
         draw.rect(surf, die_color[die], (nx, ny, size*0.4, size*0.4), 0)
         draw.rect(surf, black, (nx, ny, size * 0.4, size * 0.4), 3)
         # print_text(die, (nx+0.1*size, ny+0.05*size), white)
-        draw_die_face(die, nx, ny)
+        if die > 0: draw_die_face(die, nx, ny)
 
         # Gradient bar
-        def draw_gradient(c1, c2, x, y, width, height):
+        def draw_gradient(c1, c2, x, y, width, height, proportion):
             act_h = 0
             step = (c2-c1)/height
-            draw.rect(surf, black, (x-1, y-height, width+3, height+3), 0)
+            draw.rect(surf, (black if proportion <= 1 else red), (x-1, y-height, width+3, height+3), 0)
             while (act_h/height - proportion) < 0.01 and act_h <= height:
                 act_c = c1 + step*act_h
                 act_y = y - act_h
@@ -114,7 +114,7 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
         proportion = values[3]
         nx = x + size*0.6
         ny = y + size*0.9
-        draw_gradient(np.array(pale_turquoise), np.array(orange_red), nx, ny, size*0.3, size*0.7)
+        draw_gradient(np.array(pale_turquoise), np.array(orange_red), nx, ny, size*0.3, size*0.7, proportion)
 
         # Outer border
         draw.rect(surf, black, (x, y, size, size), 3)
