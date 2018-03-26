@@ -8,6 +8,7 @@ from autoplay import *
 from MDP import *
 import numpy as np
 import os
+import time
 
 
 def draw_board(board, dice, expec, ref_expec, directory, filename):
@@ -155,23 +156,47 @@ if __name__ == "__main__":
               Board({"trap1": [9, 13], "trap2": [8, 12, 4], "trap3": [1, 10, 11]}, circling=True)
               ]
     names = ["p1", "p2", "p3", "p4"]
+    file = open("Simulation_results.txt","w")
     for board, name in zip(boards, names):
+        file.write("New Plateau : %s \n" % name)
+
+        # Markov agent 
+        start = time.clock()
         mdp_expec, mdp_dice = markovDecision(board)
-        # mdp_dice = find_strategy(board, n_games=5000, very_intelligent=True)
-
-        # mdp_expec = play_strategy(board, lambda x: mdp_dice[x]-1, n_games=10000)
-        #
-        # ag_dice = find_strategy(board, n_games=1000, very_intelligent=False)
-        # ag_expec = play_strategy(board, lambda x: ag_dice[x], n_games=10000)
-        #
-        # rand_expec = play_strategy(board, lambda x: randrange(3), n_games=10000)
-
+        elapsed = (time.clock() - start)*1000 
+        mdp_expec = play_strategy(board, lambda x: mdp_dice[x]-1, n_games=10000)
         draw_board([x.type for x in board.board], mdp_dice, mdp_expec, mdp_expec[0], name, "mdp" + ".png")
-        # draw_board([x.type for x in board.board], mdp_dice, mdp_expec, ag_expec[0], name,"mdp"+".png")
-        # draw_board([x.type for x in board.board], [d+1 for d in ag_dice], ag_expec, ag_expec[0], name, "ag" + ".png")
-        # draw_board([x.type for x in board.board], [0]*15, rand_expec, ag_expec[0], name, "rand" + ".png")
+        file.write("Markov Agent \n")
+        file.write("Computational time %s ms \n" % "{0:.2f}".format(elapsed)) 
+        file.write(' & '.join(["{0:.2f}".format(x) for x in mdp_expec]) + ' \\\\' + '\n')
+        
+        # Homemade Agent 
+        start = time.clock()
+        ag_dice = find_strategy(board, n_games=1000, very_intelligent=True)
+        elapsed = (time.clock() - start)*1000 
+        ag_expec = play_strategy(board, lambda x: ag_dice[x], n_games=10000)
+        draw_board([x.type for x in board.board], [d+1 for d in ag_dice], ag_expec, ag_expec[0], name, "ag" + ".png")
+        file.write("Homemade Agent \n")
+        file.write("Computational time %s ms \n" % "{0:.2f}".format(elapsed)) 
+        file.write(' & '.join(["{0:.2f}".format(x) for x in ag_expec]) + ' \\\\' + '\n')
 
-    # ' & '.join([str(x) for x in a])+'\\'
+        # Suboptimal Agent 
+        start = time.clock()
+        sub_dice = find_strategy(board, n_games=1000, very_intelligent=False)
+        elapsed = (time.clock() - start)*1000
+        sub_expec = play_strategy(board, lambda x: ag_dice[x], n_games=10000)
+        draw_board([x.type for x in board.board], [d+1 for d in sub_dice], sub_expec, sub_expec[0], name, "sub" + ".png")
+        file.write("Suboptimal Agent \n")
+        file.write("Computational time %s ms \n" % "{0:.2f}".format(elapsed)) 
+        file.write(' & '.join(["{0:.2f}".format(x) for x in sub_expec]) + ' \\\\' + '\n')
+
+        # Random Agent 
+        rand_expec = play_strategy(board, lambda x: randrange(3), n_games=10000)
+        draw_board([x.type for x in board.board], [0]*15, rand_expec, ag_expec[0], name, "rand" + ".png")
+        file.write("Random Agent \n ")
+        file.write(' & '.join(["{0:.2f}".format(x) for x in rand_expec]) + ' \\\\' + '\n \n')
+        
+    file.close()
 
     # board = [x.type for x in Board({'trap1': [1, 10], 'trap2': [3, 5, 7]}).board]
     # dice = [2, 1, 3, 3, 2, 3, 3, 3, 2, 1, 1, 3, 2, 1, 1]
