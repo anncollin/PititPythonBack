@@ -1,6 +1,3 @@
-# from board_vec import Board
-# from dies import *
-# import sys
 
 
 def _rec_exp(die, board, index, expec, stop):
@@ -24,7 +21,8 @@ def get_exp(die, board, index, expec):
     return 1 + _rec_exp(die, board, index, expec, die.adv)
 
 
-def markovDecision(board):
+# cfr @markovDecision function in main.py
+def markov_decision(board):
     expec = [1] * 15
     expec[board.goal] = 0
     die_to_use = [board.dice[0]] * 15
@@ -36,16 +34,14 @@ def markovDecision(board):
     for _ in range(15):
         all_expect += [[0] * 3]
     variance = 1
-    while variance > 0.00003:  # Normally until convergence...
+    while variance > 0.00003:  # This is very close to convergence
         variance = 0
         for i in range(14):
             exp_i = [0]*3
-            # min_exp = sys.maxsize
             for j in range(len(dice)):
                 exp_i[j] = get_exp(dice[j], board, i, expec)
                 variance += abs(all_expect[i][j] - exp_i[j])
                 all_expect[i][j] = exp_i[j]
-                # min_exp = min(min_exp, exp_i[j])
 
             expec[i] = min(all_expect[i])
         _iter += 1

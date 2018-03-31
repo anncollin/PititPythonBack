@@ -1,7 +1,9 @@
 from dies import get_all_dice
 from traps import get_tile_trap
+from collections import defaultdict
 
 
+# The Board class contains the board's informations
 class Board:
     def __init__(self, trap_dic, circling=True):
         self.start = 0
@@ -20,6 +22,13 @@ class Board:
 
         self.dice = get_all_dice()
 
+    '''
+        @state: the square which successors are wanted
+        @first: true if the player starts his turn on @state
+                false otherwise
+         
+        @return a list with the successors of @state         
+    '''
     def get_successors(self, state, first=False):
         if state == 2 and first:
             return [3, 10]
@@ -35,6 +44,12 @@ class Board:
         else:
             return [state + 1]
 
+    '''
+        @state: the square which precursor is wanted
+        @backtrack: the numbers of squares back
+
+        @return state-backtrack applied to this board            
+    '''
     def get_precursor(self, state, backtrack):
         if 10 <= state < 10 + backtrack:
             to_deduce = backtrack - (state-9)
@@ -43,4 +58,16 @@ class Board:
 
     def get_tile(self, index):
         return self.board[index]
+
+
+# A conversion function to satisfy the project's signature
+def make_board(arr):
+    dico = defaultdict(list)
+    for x, ind in zip(arr, range(len(arr))):
+        if x != 0:
+            if x > 3:
+                print("Trap {} at index {} is not supported".format(x, ind))
+                continue
+            dico['trap{}'.format] += [ind]
+    return Board(dico)
 

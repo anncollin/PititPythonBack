@@ -151,7 +151,7 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
 if __name__ == "__main__":
     seed(456)
     boards = [
-        Board(defaultdict(list), circling=False), Board(defaultdict(list), circling=False),
+        Board(defaultdict(list), circling=True), Board(defaultdict(list), circling=False),
               Board({"trap1": [10], "trap2": [4, 5, 8], "trap3":[]}, circling=False),
               Board({"trap1": [9, 13], "trap2": [8, 12, 4], "trap3": [1, 10, 11]}, circling=True)
               ]
@@ -160,11 +160,11 @@ if __name__ == "__main__":
     for board, name in zip(boards, names):
         file.write("New Plateau : %s \n" % name)
 
-        # Markov agent 
+        # Markov agent
         start = time.clock()
-        mdp_expec, mdp_dice = markovDecision(board)
-        elapsed = (time.clock() - start)*1000 
-        mdp_expec = play_strategy(board, lambda x: mdp_dice[x]-1, n_games=10000)
+        mdp_expec, mdp_dice = markov_decision(board)
+        elapsed = (time.clock() - start) * 1000
+        mdp_expec = play_strategy(board, lambda x: mdp_dice[x]-1, n_games=100000)
         draw_board([x.type for x in board.board], mdp_dice, mdp_expec, mdp_expec[0], name, "mdp" + ".png")
         file.write("Markov Agent \n")
         file.write("Computational time %s ms \n" % "{0:.2f}".format(elapsed)) 
@@ -174,7 +174,7 @@ if __name__ == "__main__":
         start = time.clock()
         ag_dice = find_strategy(board, n_games=1000, very_intelligent=True)
         elapsed = (time.clock() - start)*1000 
-        ag_expec = play_strategy(board, lambda x: ag_dice[x], n_games=10000)
+        ag_expec = play_strategy(board, lambda x: ag_dice[x], n_games=100000)
         draw_board([x.type for x in board.board], [d+1 for d in ag_dice], ag_expec, ag_expec[0], name, "ag" + ".png")
         file.write("Homemade Agent \n")
         file.write("Computational time %s ms \n" % "{0:.2f}".format(elapsed)) 
@@ -184,7 +184,7 @@ if __name__ == "__main__":
         start = time.clock()
         sub_dice = find_strategy(board, n_games=1000, very_intelligent=False)
         elapsed = (time.clock() - start)*1000
-        sub_expec = play_strategy(board, lambda x: ag_dice[x], n_games=10000)
+        sub_expec = play_strategy(board, lambda x: sub_dice[x], n_games=100000)
         draw_board([x.type for x in board.board], [d+1 for d in sub_dice], sub_expec, sub_expec[0], name, "sub" + ".png")
         file.write("Suboptimal Agent \n")
         file.write("Computational time %s ms \n" % "{0:.2f}".format(elapsed)) 
@@ -198,8 +198,3 @@ if __name__ == "__main__":
         
     file.close()
 
-    # board = [x.type for x in Board({'trap1': [1, 10], 'trap2': [3, 5, 7]}).board]
-    # dice = [2, 1, 3, 3, 2, 3, 3, 3, 2, 1, 1, 3, 2, 1, 1]
-    # expec = [11.698915143254899, 11.032249954001127, 9.032252820017574, 9.701159919483432, 8.43010450515775, 7.401431295786926, 5.643368090782532, 4.232526126289438, 2.5, 2.0, 4.833333333333332, 2.833333333333333, 2.5, 2.0, 0]
-    # ref_expec = expec[0]
-    # draw_board(board, dice, expec, ref_expec, "board.png")
