@@ -37,7 +37,7 @@ def create_model():
     return model
 
 
-def gather_initial_data(env, min_score = 50):
+def gather_initial_data(env, min_score=50):
     num_trials = 1000
     sim_steps = 500
     x_train, y_train = [], []
@@ -117,7 +117,7 @@ def predict():
             continue
         model.fit(x_train, y_train, epochs=5)
         scores = []
-        num_trials = 50
+        num_trials = 5
         sim_steps = 1000
         for _ in range(num_trials):
             observation = env.reset()
@@ -125,8 +125,8 @@ def predict():
             for step in range(sim_steps):
                 action = np.argmax(model.predict(observation.reshape(1, 4)))
                 observation, reward, done, _ = env.step(action)
-                # env.render()
-                # sleep(0.05)
+                env.render()
+                sleep(0.05)
                 score += reward
                 if done:
                     break
