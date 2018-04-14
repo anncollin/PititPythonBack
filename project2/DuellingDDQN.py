@@ -101,8 +101,8 @@ class DQN:
             if done or tot_reward >= 200:
                 target[action] = reward
             else:
-                q_argmax = np.argmax(self.target_model.predict([new_state,
-                                                                np.ones(self.action_space)])[0])
+                q_argmax = np.argmax(self.model.predict([new_state,
+                                                         np.ones(self.action_space)])[0])
                 q_vec = np.zeros(self.action_space)
                 q_vec[0][q_argmax] = 1
                 q_future = self.target_model.predict([new_state,
