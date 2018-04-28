@@ -194,7 +194,7 @@ def main():
     epsilon = .95
 
     trials = 10000
-    trial_len = 100000
+    trial_len = 1000000
     iter_limit = -1000
     # updateTargetNetwork = 1000
     dqn_agent = DQN(env=env)
@@ -202,8 +202,14 @@ def main():
     total_ok = 0
     steps = 0
     for trial in range(trials):
+        env = gym.make("SuperMarioBros-1-1-v0")
+        # env.configure(lock=multiprocessing.Lock())
+        wrapper = ToDiscrete()
+        env = wrapper(env)
         print("start loop")
-        cur_state = env.reset()
+        cur_state = None
+        while cur_state is None:
+            cur_state = env.reset()
         total_reward = 0
         learned = 0
         print(iter_limit)

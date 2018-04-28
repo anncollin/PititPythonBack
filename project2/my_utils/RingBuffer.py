@@ -1,3 +1,6 @@
+from random import randrange
+
+
 class RingBuffer:
     def __init__(self, size):
         # Pro-tip: when implementing a ring buffer, always allocate one extra element,
@@ -15,6 +18,9 @@ class RingBuffer:
         # too many element. Remove the first element by incrementing start.
         if self.end == self.start:
             self.start = (self.start + 1) % len(self.data)
+
+    def get_random(self):
+        return self.__getitem__(randrange(self.__len__()))
 
     def __getitem__(self, idx):
         return self.data[(self.start + idx) % len(self.data)]
