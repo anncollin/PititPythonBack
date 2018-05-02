@@ -7,6 +7,8 @@ from keras.optimizers import Adam, RMSprop
 from keras import backend as K
 from collections import deque
 from time import sleep
+from snl import SnlEnv
+from board import Board
 
 
 # Note: pass in_keras=False to use this function with raw numbers of numpy arrays for testing
@@ -24,7 +26,7 @@ def huber_loss(a, b, in_keras=True):
 class DQN:
     def __init__(self, env):
         self.env = env
-        self.memory = deque(maxlen=100000)
+        self.memory = deque(maxlen=10000)
 
         self.gamma = 0.99
         self.epsilon = 1.0
@@ -34,36 +36,37 @@ class DQN:
         self.tau = .5
 
         self.action_space = (1, self.env.action_space.n)
-        self.model = self.create_model()
-        self.target_model = self.create_model()
+        self.model = self.create_model(self.env)
+        self.target_model = self.create_model(self.env)
 
-    def create_model(self):
+    @staticmethod
+    def create_model(env):
         optimizer = RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)  # Adam(lr=self.learning_rate)
-        state_shape = self.env.observation_space.shape
-        print(state_shape)
+        state_shape = env.observation_space.shape
+
         # Layers for the model
         state_input = Input(state_shape, name='frames')
-        actions_input = Input((self.env.action_space.n, ), name='mask')
-        hidden1 = Dense(16, activation="relu", name='hidden1')(state_input)
-        hidden2 = Dense(32, activation="relu", name='hidden2')(hidden1)
+        actions_input = Input((env.action_space.n, ), name='mask')
+        hidden1 = Dense(4, activation="relu", name='hidden1')(state_input)
+        hidden2 = Dense(8, activation="relu", name='hidden2')(hidden1)
 
         # Right part
-        hidden3 = Dense(64, activation="relu", name='hidden3')(hidden2)
-        output = Dense(self.env.action_space.n, name='output')(hidden3)
+        hidden3 = Dense(16, activation="relu", name='hidden3')(hidden2)
+        output = Dense(env.action_space.n, name='output')(hidden3)
 
         def layer_mean(xin):
             ss = K.mean(xin, axis=1, keepdims=True)  # compute mean
-            ss = K.repeat_elements(ss, 4, axis=1)  # repeat mean
+            ss = K.repeat_elements(ss, env.action_space.n, axis=1)  # repeat mean
             return ss
         mean = Lambda(lambda xin: layer_mean(xin), name="mean")(output)
         sub_output = subtract([output, mean], name="sub_output")
 
         # Left Part
-        para_hidden3 = Dense(64, activation="relu", name='para_hidden3')(hidden2)
+        para_hidden3 = Dense(16, activation="relu", name='para_hidden3')(hidden2)
         para_output = Dense(1, name='para_output')(para_hidden3)
 
         def repeat(xin):
-            ss = K.repeat_elements(xin, 4, axis=1)  # repeat mean
+            ss = K.repeat_elements(xin, env.action_space.n, axis=1)  # repeat mean
             return ss
         para_repeat_output = Lambda(lambda xin: repeat(xin), name="repeat")(para_output)
 
@@ -81,6 +84,7 @@ class DQN:
         self.epsilon = max(self.epsilon_min, self.epsilon)
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()
+
         return np.argmax(self.model.predict([state,
                                              np.ones(self.action_space)])[0])
 
@@ -91,14 +95,14 @@ class DQN:
         if len(self.memory) < batch_size:
             return
 
-        states = np.empty((1, 8), dtype="float32")
-        targets = np.empty((1, 4))
+        # states = np.empty((1, 8), dtype="float32")
+        # targets = np.empty((1, 4))
         samples = random.sample(self.memory, batch_size)
         for sample in samples:
             state, action, reward, tot_reward, new_state, done = sample
-            np.append(states, state)
+            # np.append(states, state)
             target = np.zeros(self.env.action_space.n)
-            if done or tot_reward >= 200:
+            if done:
                 target[action] = reward
             else:
                 q_argmax = np.argmax(self.model.predict([new_state,
@@ -123,82 +127,81 @@ class DQN:
 
 
 def replay():
-    input("Continue ?")
-    env = gym.make("LunarLander-v2")
+    # input("Continue ?")
+    env = SnlEnv(
+        Board({"trap1": [9, 13], "trap2": [8, 12, 4], "trap3": [1, 10, 11]}, circling=True)
+    )
 
-    for i in range(21):
-        print(str(i)+"============================")
-        model = load_model(str(i)+"success.model", custom_objects={'huber_loss': huber_loss})
-        for _ in range(5):
-            # Replaying to watch what it looks like
-            cur_state = env.reset()
-            # print(cur_state)
-            cur_state = cur_state.reshape(1, 8)
-            score = 0
-            total_reward = 0
-            for step in range(1000):
-                # print(cur_state)
-                action = np.argmax(model.predict([cur_state, np.ones((1, 4))])[0])
-                new_state, reward, done, _ = env.step(action)
-                total_reward += reward
-                new_state = new_state.reshape(1, 8)
-                score += reward
-                env.render()
-                sleep(0.001)
-                cur_state = new_state
-                if done or total_reward >= 200:
-                    break
-            print(total_reward)
+    # for i in range(100):
+    # print(str(i)+"============================")
+    model = DQN.create_model(env)
+    # model.load_weights(str(i)+"success.model")
+    model.load_weights("last_model.weights")
+    # Replaying to watch what it looks like
+    env.reset()
+    for xi in range(15):
+
+        # print(cur_state)
+        env.tile = xi
+        cur_state = env.get_state().reshape(1, 2)
+
+        # print(cur_state)
+        action = np.argmax(model.predict([cur_state, np.ones((1, 3))])[0])
+        env.step(action)
+
+    env.render()
+    sleep(1)
+    input("Stop ?")
+    env.quit()
 
 
 def main():
-    env = gym.make("LunarLander-v2")
-    gamma = 0.9
-    epsilon = .95
+    env = SnlEnv(
+        Board({"trap1": [9, 13], "trap2": [8, 12, 4], "trap3": [1, 10, 11]}, circling=True)
+    )
 
     trials = 10000
     trial_len = 800
     iter_limit = -1000
     # updateTargetNetwork = 1000
     dqn_agent = DQN(env=env)
-    steps = []
+    print("init done")
     total_ok = 0
     steps = 0
     for trial in range(trials):
-        cur_state = env.reset().reshape(1, 8)
+        cur_state = env.reset().reshape(1, 2)
         total_reward = 0
-        learned = 0
         print(iter_limit)
         for step in range(trial_len):
             steps += 1
-            env.render()
+            # env.render()
 
             action = dqn_agent.act(cur_state)
             new_state, reward, done, _ = env.step(action)
 
             total_reward += reward
-            new_state = new_state.reshape(1, 8)
+            new_state = new_state.reshape(1, 2)
             dqn_agent.remember(cur_state, action, reward, total_reward, new_state, done)
-            dqn_agent.replay(32)  # internally iterates default (prediction) model
-            if steps % 2000:
+            dqn_agent.replay(8)  # internally iterates default (prediction) model
+            if steps % 50:
                 dqn_agent.target_train()  # iterates target model
 
             cur_state = new_state
-            if done or total_reward >= 200:
+            if done:
                 break
 
         if total_reward > iter_limit:
             iter_limit = total_reward
 
         # dqn_agent.replay()
-        dqn_agent.save_model("last_model")
 
         print(total_reward)
         if total_reward > 0:
             print("Completed in {} trials".format(trial))
-            dqn_agent.save_model(str(total_ok)+"success.model")
+            # dqn_agent.save_model(str(total_ok)+"success.model")
             total_ok += 1
-            if total_ok > 100:
+            if total_ok > 10000:
+                dqn_agent.save_model("last_model")
                 break
         else:
             print("Failed to complete in trial {}".format(trial))
@@ -207,6 +210,7 @@ def main():
             print(total_ok)
             break
     print(total_ok)
+    env.quit()
 
 
 if __name__ == "__main__":

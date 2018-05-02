@@ -20,6 +20,7 @@ def markovDecision(args):
 
 
 if __name__ == "__main__":
+    print([int(x) for x in sys.argv[1:]])
     Expec, Dice = markovDecision([int(x) for x in sys.argv[1:]])
     print("Square nmb : "+''.join(["{:5.0f} ".format(x) for x in list(range(1, 16))]))
     print("Expectation: "+''.join(["{:5.2f} ".format(x) for x in Expec]))

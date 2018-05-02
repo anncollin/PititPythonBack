@@ -11,7 +11,7 @@ import os
 import time
 
 
-def draw_board(board, dice, expec, ref_expec, directory, filename):
+def draw_board(board, dice, expec, ref_expec, directory, filename, surf=None, render=False):
     # Color initialization
     red = (255, 0, 0)
     green = (0, 255, 0)
@@ -37,8 +37,12 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
     surfX = 2760
     surfY = 480
     surfM = 20
-    surf = Surface((surfX, surfY))
-
+    if surf is None:
+        surf = Surface((surfX, surfY))
+    else:
+        surfX //= 2
+        surfY //= 2
+        surfM //= 2
     # white background
     surf.fill(white)
 
@@ -60,7 +64,7 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
     def print_case(surf, x, y, values):
         def print_text(text, pos, color, emoji=False):
             text = str(text)
-            ft = freetype.Font("seguisym.ttf", 50) if emoji else freetype.SysFont('Calibri', round(size*0.2))
+            ft = freetype.Font("seguisym.ttf", round(size*0.3)) if emoji else freetype.SysFont('Calibri', round(size*0.2))
             text = ft.render(text, fgcolor=color)
             surf.blit(text[0], pos)
 
@@ -143,9 +147,13 @@ def draw_board(board, dice, expec, ref_expec, directory, filename):
         draw.line(surf, black, (x, y), (x + d[0] * size/2, y + d[1] * size * 0.5), 3)
 
     # save picture
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    image.save(surf, os.path.join(directory, filename))
+    if not render:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        image.save(surf, os.path.join(directory, filename))
+        return None
+    else:
+        return image
 
 
 if __name__ == "__main__":

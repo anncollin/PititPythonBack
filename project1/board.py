@@ -68,6 +68,7 @@ def make_board(arr):
             if x > 3:
                 print("Trap {} at index {} is not supported".format(x, ind))
                 continue
-            dico['trap{}'.format] += [ind]
+            dico['trap{}'.format(x)] += [ind]
+
     return Board(dico)
 
