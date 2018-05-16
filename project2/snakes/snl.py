@@ -4,7 +4,7 @@
 # env.render()
 # env.step(action)
 import sys
-sys.path.append("/home/tonio/Documents/MA2/DataMining/PititPythonBack/project1")
+sys.path.append("../../project1")
 from board import Board
 from autoplay import _play_turn
 from random import randrange
@@ -20,14 +20,14 @@ class Shape:
         self.n = n
 
     def sample(self):
-        arr = np.array([0]*self.n)
-        arr[randrange(0, self.n)] = 1
+        # arr = np.array([0]*self.n)
+        # arr[randrange(0, self.n)] = 1
         return randrange(0, self.n)
 
 
 class SnlEnv:
     def __init__(self, board):
-        self.observation_space = Shape(shape=(2, ))
+        self.observation_space = Shape(n=15, shape=(15, ))
         self.action_space = Shape(n=3)
         self.board = board
         self.tile = 0
@@ -35,6 +35,7 @@ class SnlEnv:
         pygame.init()
         self.display = pygame.display.set_mode((2760//2, 480//2))
         self.dice = [-1]*15
+        self.type_board = [x.type for x in board.board]
 
     def reset(self):
         self.tile = 0
@@ -42,7 +43,7 @@ class SnlEnv:
         return self.get_state()
 
     def render(self):
-        img = draw_board([x.type for x in self.board.board],
+        img = draw_board(self.type_board,
                          [d + 1 for d in self.dice],
                          [0]*15,
                          1,
@@ -53,17 +54,20 @@ class SnlEnv:
         pygame.display.update()
 
     def step(self, action):
+        prev = self.tile
         self.dice[self.tile] = action
         self.tile, reward = _play_turn(self.tile, self.all_dice[action], self.board)
         if self.tile == 14:
             reward = 100
         else:
-            reward = - reward
+            reward =(self.tile-prev) - reward
 
         return self.get_state(), reward, self.tile == 14, None  # or == 14?
 
     def get_state(self):
-        return np.array([self.tile, self.board.get_tile(self.tile).type])
+        arr = np.zeros(15)
+        arr[self.tile] = 1
+        return arr # np.array([self.tile, self.board.get_tile(self.tile).type])  # + self.type_board)  # self.board.get_tile(self.tile).type])
 
     def quit(self):
         pygame.display.quit()

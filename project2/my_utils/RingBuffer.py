@@ -22,6 +22,7 @@ class RingBuffer:
     def get_random(self):
         return self.__getitem__(randrange(self.__len__()))
 
+
     def __getitem__(self, idx):
         return self.data[(self.start + idx) % len(self.data)]
 

@@ -3,13 +3,14 @@ import numpy as np
 import random
 from keras.models import load_model, Model
 from keras.layers import Dense, Input, multiply, add, subtract, Lambda, Conv2D, Flatten
-from keras.optimizers import RMSprop
+from keras.optimizers import RMSprop, Adam
 from keras import backend as K
 from keras.utils import np_utils
 from time import sleep
 from my_utils.RingBuffer import RingBuffer
 from my_utils.action_space import ToDiscrete
 import multiprocessing
+import subprocess
 
 # Note: pass in_keras=False to use this function with raw numbers of numpy arrays for testing
 def huber_loss(a, b, in_keras=True):
@@ -30,13 +31,17 @@ class DQN:
 
         self.gamma = 0.99
         self.epsilon = 1.0
-        self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        self.epsilon_min = 0.1
+        self.epsilon_decay = 0.999
         self.learning_rate = 0.005
         self.tau = .5
 
         self.model = self.create_model()
         self.target_model = self.create_model()
+
+    @staticmethod
+    def state_shape():
+        return (1, 112, 128)
 
     @staticmethod
     def n_actions():
@@ -61,14 +66,14 @@ class DQN:
             return np.mean(img, axis=2).astype(np.uint8)
 
         def downsample(img):
-            return img[::4, ::4]
+            return img[::2, ::2]
 
-        return to_grayscale(downsample(img)).reshape(1, 1, 56, 64)
+        return to_grayscale(downsample(img)).reshape((1,)+DQN.state_shape())
 
     @staticmethod
     def create_model():
-        optimizer = RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)  # Adam(lr=self.learning_rate)
-        state_shape = (1, 56, 64)
+        optimizer = Adam(lr=0.005) #RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)  #
+        state_shape = DQN.state_shape()
         n_actions = DQN.n_actions()
 
         # Layers for the model
@@ -125,14 +130,17 @@ class DQN:
         if len(self.memory) < batch_size:
             return
 
-        # states = np.empty((1, 8), dtype="float32")
-        # targets = np.empty((1, 4))
+        states = np.empty((batch_size,)+self.state_shape(), dtype="float32")
+        targets = np.empty((batch_size,14))#+self.action_space())
+        actions = np.empty((batch_size,14))#+self.action_space())
+        all_in = []
+        all_out = []
         # samples = random.sample(self.memory, batch_size)
-        for _ in range(batch_size):
+        for i in range(batch_size):
             sample = self.memory.get_random()
             state, action, reward, tot_reward, new_state, done = sample
             target = np.zeros(self.n_actions())
-            if done or tot_reward >= 200:
+            if done:
                 target[action] = reward
             else:
                 q_argmax = np.argmax(self.model.predict([new_state,
@@ -144,8 +152,16 @@ class DQN:
                 target[action] = reward + q_future * self.gamma
             in_actions = np.zeros(self.action_space())
             in_actions[0][action] = 1
-            self.model.fit([state, in_actions], np.array([target]), epochs=1, verbose=0)
-        # self.model.fit(states, targets, epochs=1, verbose=0, batch_size=batch_size)
+
+            states[i] = state[0]
+            targets[i] = target[0]
+            actions[i] = in_actions[0]
+            # self.model.fit([state, in_actions], np.array([target]), epochs=1, verbose=0)
+        # print(np.append(states, actions, axis=1))
+        # print(states)
+        # print(actions)
+        # print(targets)
+        self.model.fit([states, actions], targets, epochs=1, verbose=0, batch_size=batch_size)
 
     def target_train(self):
         self.target_model.set_weights(self.model.get_weights())
@@ -155,33 +171,37 @@ class DQN:
         self.model.save_weights("aw/"+fn + ".weights")
 
 
-# def replay():
-#     input("Continue ?")
-#     env = gym.make("LunarLander-v2")
-#
-#     for i in range(21):
-#         print(str(i)+"============================")
-#         model = load_model(str(i)+"success.model", custom_objects={'huber_loss': huber_loss})
-#         for _ in range(5):
-#             # Replaying to watch what it looks like
-#             cur_state = env.reset()
-#             # print(cur_state)
-#             cur_state = cur_state.reshape(1, 8)
-#             score = 0
-#             total_reward = 0
-#             for step in range(1000):
-#                 # print(cur_state)
-#                 action = np.argmax(model.predict([cur_state, np.ones((1, 4))])[0])
-#                 new_state, reward, done, _ = env.step(action)
-#                 total_reward += reward
-#                 new_state = DQN.preprocess(new_state)
-#                 score += reward
-#                 env.render()
-#                 sleep(0.001)
-#                 cur_state = new_state
-#                 if done or total_reward >= 200:
-#                     break
-#             print(total_reward)
+def replay():
+    input("Continue ?")
+    env = gym.make("SuperMarioBros-1-1-v0")
+    wrapper = ToDiscrete()
+    env = wrapper(env)
+
+    model = DQN.create_model()
+    model.load_weights("aw/50success.model.weights")
+    for _ in range(5):
+        # Replaying to watch what it looks like
+        cur_state = DQN.preprocess(env.reset())
+        # print(cur_state)
+        # cur_state = cur_state.reshape(1, 8)
+        score = 0
+        total_reward = 0
+        while True:
+            # print(cur_state)
+            action = np.argmax(model.predict([cur_state,
+                                         np.ones(DQN.action_space())])[0])
+            # print(action)
+            # avec = np.zeros(DQN.action_space())
+            # avec[0][action] = 1
+            new_state, reward, done, _ = env.step(action)
+            total_reward += reward
+            new_state = DQN.preprocess(new_state)
+            score += reward
+            env.render()
+            cur_state = new_state
+            if done:
+                break
+        print(total_reward)
 
 
 def main():
@@ -193,17 +213,18 @@ def main():
     gamma = 0.9
     epsilon = .95
 
-    trials = 10000
-    trial_len = 1000000
+    trials = 10000000
+    # trial_len = 1000000
     iter_limit = -1000
     # updateTargetNetwork = 1000
     dqn_agent = DQN(env=env)
     steps = []
     total_ok = 0
     steps = 0
-    for trial in range(trials):
+    trial = 0
+    while trial < trials:
+        trial += 1
         env = gym.make("SuperMarioBros-1-1-v0")
-        # env.configure(lock=multiprocessing.Lock())
         wrapper = ToDiscrete()
         env = wrapper(env)
         print("start loop")
@@ -212,8 +233,8 @@ def main():
             cur_state = env.reset()
         total_reward = 0
         learned = 0
-        print(iter_limit)
-        for step in range(trial_len):
+        # print(iter_limit)
+        while True:
             steps += 1
             # env.render()
             # a = env.action_space.sample()
@@ -222,7 +243,8 @@ def main():
 
             action = dqn_agent.act(cur_state)
             new_state, reward, done, info = env.step(action)
-            print(info)
+            # print(reward)
+            reward *= 1000
             if done and 'ignore' in info:
                 print("broke free")
                 break
@@ -243,20 +265,17 @@ def main():
 
         dqn_agent.save_model("last_model")
         env.close()
-        # print(total_reward)
-        # if total_reward > 0:
-        #     print("Completed in {} trials".format(trial))
-        #     dqn_agent.save_model(str(total_ok)+"success.model")
-        #     total_ok += 1
-        #     if total_ok > 100:
-        #         break
-        # else:
-        #     print("Failed to complete in trial {}".format(trial))
-        # dqn_agent.target_train()
-        if steps > 100000:
-            print(total_ok)
-            break
-    print(total_ok)
+        print(total_reward)
+        print("Completed in {} trials".format(trial))
+        if total_ok % 10 == 0:
+            dqn_agent.save_model(str(total_ok)+"success.model")
+        total_ok += 1
+
+        while True:
+            ok = subprocess.run("killall fceux", shell=True)
+            sleep(1)
+            if ok!=0:
+                break
 
 
 if __name__ == "__main__":
