@@ -9,7 +9,7 @@ from collections import deque
 from time import sleep
 from snl import SnlEnv
 from board import Board
-
+import sys
 
 # Note: pass in_keras=False to use this function with raw numbers of numpy arrays for testing
 def huber_loss(a, b, in_keras=True):
@@ -28,7 +28,7 @@ class DQN:
         self.env = env
         self.memory = deque(maxlen=100000)
 
-        self.gamma = 0.99
+        self.gamma = 0.5
         self.epsilon = 1.0
         self.epsilon_min = 0.1
         self.epsilon_decay = 0.9
@@ -103,7 +103,7 @@ class DQN:
             state, action, reward, tot_reward, new_state, done = samples[i]
             # np.append(states, state)
             target = np.zeros(self.env.action_space.n)
-            if done:
+            if done:  # or len(self.memory) < 100000:
                 target[action] = reward
             else:
                 q_argmax = np.argmax(self.model.predict([new_state,
@@ -119,11 +119,14 @@ class DQN:
             states[i] = state[0]
             targets[i] = target[0]
             actions[i] = in_actions[0]
-            # self.model.fit([state, in_actions], np.array([target]), epochs=1, verbose=0)
-        self.model.fit([states, actions], targets, epochs=1, verbose=0, batch_size=batch_size)
+            self.model.fit([state, in_actions], np.array([target]), epochs=1, verbose=0)
+        # self.model.fit([states, actions], targets, epochs=1, verbose=0, batch_size=batch_size)
 
     def target_train(self):
-        self.target_model.set_weights(self.model.get_weights())
+        self.save_model("plop")
+        self.target_model = self.create_model(self.env)
+        self.target_model.load_weights("plop.weights")
+        # self.target_model.set_weights(self.model.get_weights())
 
     def save_model(self, fn):
         self.model.save(fn)
@@ -133,12 +136,12 @@ class DQN:
 def replay():
     # input("Continue ?")
     while True:
-        # env = SnlEnv(
-        #     Board({"trap1": [9, 13], "trap2": [8, 12, 4], "trap3": [1, 10, 11]}, circling=True)
-        # )
         env = SnlEnv(
-            Board({"trap1": [], "trap2": [], "trap3": []}, circling=False)
+            Board({"trap1": [9, 13], "trap2": [8, 12, 4], "trap3": [1, 10, 11]}, circling=True)
         )
+        # env = SnlEnv(
+        #     Board({"trap1": [], "trap2": [], "trap3": []}, circling=False)
+        # )
 
         # for i in range(100):
         # print(str(i)+"============================")
@@ -166,12 +169,12 @@ def replay():
 
 
 def main():
-    # env = SnlEnv(
-    #     Board({"trap1": [9, 13], "trap2": [8, 12, 4], "trap3": [1, 10, 11]}, circling=True)
-    # )
     env = SnlEnv(
-        Board({"trap1": [], "trap2": [], "trap3": []}, circling=False)
+        Board({"trap1": [9, 13], "trap2": [8, 12, 4], "trap3": [1, 10, 11]}, circling=True)
     )
+    # env = SnlEnv(
+    #     Board({"trap1": [], "trap2": [], "trap3": []}, circling=False)
+    # )
 
     trials = 100000
     trial_len = 800
@@ -196,7 +199,7 @@ def main():
             new_state = new_state.reshape(1, env.observation_space.n)
             dqn_agent.remember(cur_state, action, reward, total_reward, new_state, done)
             dqn_agent.replay(32)  # internally iterates default (prediction) model
-            if steps % 150:
+            if steps % 500 == 0:
                 dqn_agent.target_train()  # iterates target model
 
             cur_state = new_state
@@ -217,5 +220,6 @@ def main():
 
 if __name__ == "__main__":
     random.seed(456)
-    # main()
+    if len(sys.argv) > 1:
+        main()
     replay()

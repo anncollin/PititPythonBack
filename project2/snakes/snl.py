@@ -56,11 +56,22 @@ class SnlEnv:
     def step(self, action):
         prev = self.tile
         self.dice[self.tile] = action
-        self.tile, reward = _play_turn(self.tile, self.all_dice[action], self.board)
+        self.tile, n_moves = _play_turn(self.tile, self.all_dice[action], self.board)
         if self.tile == 14:
-            reward = 100
+            reward = 100 + 15*n_moves
+        elif prev > self.tile:
+            if prev >= 10 and self.tile < 10:
+                reward = -((prev-10)+(3-self.tile))
+            else:
+                reward = (self.tile-prev)
         else:
-            reward =(self.tile-prev) - reward
+            if prev < 10 and self.tile >= 10:
+                reward = ((self.tile-10)+(3-prev))
+            else:
+                reward = (self.tile-prev)
+        reward -= 15*n_moves
+        # else:
+        #     reward = -reward #(self.tile-prev) - reward
 
         return self.get_state(), reward, self.tile == 14, None  # or == 14?
 
